@@ -10,11 +10,12 @@ const resolvers = {
       return context.prisma.link.findMany();
     },
     link: async (parent, args, context) => {
-      return context.prisma.link.findFirst({
+      const link = await context.prisma.link.findUnique({
         where: {
           id: parseInt(args.id),
         },
       });
+      return link;
     },
   },
   Mutation: {
@@ -27,28 +28,29 @@ const resolvers = {
       });
       return link;
     },
-    updateLink: (parent, args) => {
-      // const link = links.find((link) => link.id === args.id);
-      // if (!link) {
-      //   return;
-      // }
-      // const { url, description } = args;
-      // if (url && description) {
-      //   link.url = url;
-      //   link.description = description;
-      //   return link;
-      // }
+    updateLink: async (parent, args, context) => {
+      const { url, description } = args;
+      if (url && description) {
+        const link = await context.prisma.link.update({
+          where: {
+            id: parseInt(args.id),
+          },
+          data: {
+            url,
+            description,
+          },
+        });
+        return link;
+      }
       return;
     },
-    deleteLink: (parent, args) => {
-      // const link = links.find((link) => link.id === args.id);
-      // if (!link) {
-      //   return;
-      // }
-      // const index = links.findIndex((link) => link.id === args.id);
-      // links.splice(index, 1);
-      // return link;
-      return;
+    deleteLink: async (parent, args, context) => {
+      const link = await context.prisma.link.delete({
+        where: {
+          id: parseInt(args.id),
+        },
+      });
+      return link;
     },
   },
 };
