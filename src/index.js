@@ -1,5 +1,6 @@
 const { ApolloServer } = require("apollo-server");
 const { PrismaClient } = require("@prisma/client");
+const { PubSub } = require("apollo-server");
 const fs = require("fs");
 const path = require("path");
 
@@ -19,14 +20,15 @@ const resolvers = {
     },
   },
   Mutation: {
-    post: (parent, args, context) => {
-      const link = context.prisma.link.create({
+    post: async (parent, args, context) => {
+      const newLink = await context.prisma.link.create({
         data: {
           url: args.url,
           description: args.description,
         },
       });
-      return link;
+      context.pubsub.publish("NEW_LINK", newLink);
+      return newLink;
     },
     updateLink: async (parent, args, context) => {
       const { url, description } = args;
@@ -53,15 +55,24 @@ const resolvers = {
       return link;
     },
   },
+  Subscription: {
+    newLink: {
+      subscribe: (parent, args, context) =>
+        context.pubsub.asyncIterator("NEW_LINK"),
+      resolve: (payload) => payload,
+    },
+  },
 };
 
 const prisma = new PrismaClient();
+const pubsub = new PubSub();
 
 const server = new ApolloServer({
   typeDefs: fs.readFileSync(path.join(__dirname, "schema.graphql"), "utf-8"),
   resolvers,
   context: {
     prisma,
+    pubsub,
   },
 });
 
