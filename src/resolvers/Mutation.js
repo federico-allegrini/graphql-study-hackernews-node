@@ -85,10 +85,37 @@ async function deleteLink(parent, args, context, info) {
   return link;
 }
 
+async function vote(parent, args, context, info) {
+  const { userId } = context;
+  if (!userId) {
+    throw new Error("Not authenticated");
+  }
+  const vote = await context.prisma.vote.findUnique({
+    where: {
+      linkId_userId: {
+        linkId: Number(args.linkId),
+        userId,
+      },
+    },
+  });
+  if (Boolean(vote)) {
+    throw new Error(`Already voted for link: ${args.linkId}`);
+  }
+  const newVote = await context.prisma.vote.create({
+    data: {
+      link: { connect: { id: Number(args.linkId) } },
+      user: { connect: { id: userId } },
+    },
+  });
+  context.pubsub.publish("NEW_VOTE", newVote);
+  return newVote;
+}
+
 module.exports = {
   signup,
   login,
   post,
   updateLink,
   deleteLink,
+  vote,
 };
