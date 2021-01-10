@@ -13,7 +13,12 @@ async function feed(parent, args, context, info) {
     take: args.take,
     orderBy: args.orderBy,
   });
-  return links;
+  const count = await context.prisma.link.count({ where });
+  return {
+    id: "main-feed",
+    links,
+    count,
+  };
 }
 async function link(parent, args, context, info) {
   const link = await context.prisma.link.findUnique({
