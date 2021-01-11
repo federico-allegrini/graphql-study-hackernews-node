@@ -77,12 +77,21 @@ async function deleteLink(parent, args, context, info) {
   if (!userId) {
     throw new Error("Not authenticated");
   }
-  const link = await context.prisma.link.delete({
+  const link = await context.prisma.link.findUnique({
     where: {
       id: parseInt(args.id),
     },
   });
-  return link;
+  if (!link) {
+    throw new Error("No link found");
+  }
+  await context.prisma.vote.deleteMany({ where: { link } });
+  const deletedLink = await context.prisma.link.delete({
+    where: {
+      id: parseInt(args.id),
+    },
+  });
+  return deletedLink;
 }
 
 async function vote(parent, args, context, info) {
